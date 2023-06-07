@@ -1,0 +1,207 @@
+#+Title: Emacs Literate Programming
+#+COVER_IMAGE: /images/cover.webp
+#+DATE: 2023-06-07
+#+AUTHOR: Andrew Lamichhane
+
+Literate programming is a cool way to intergrate natural language into the source code for the explanation rather than using comments.
+It was introuduced by [[https://en.wikipedia.org/wiki/Donald_Knuth][Donald Knuth]]. 
+
+Emacs has an interesting way to achieve this, I haven't really seen it being used anywhere else than for configuring emacs itself,
+so as an example let's solve [[https://adventofcode.com/2022/day/2][Advent of Code 2022 (Day 2)]], using emacs org literate programming, for this the language of my choice is typescript.
+
+I am not really good at typescript, so bear in mind that my code might not be follwing the standards.
+
+** First step
+Let's create a file named "day2.ts" and initialize the neccessary configs for the typescript file,
+
+#+begin_src  
+ npm init -y
+ tsc -init
+#+end_src
+
+Create a file with ".org" extension, this will be recognized as an standard emacs org doc, and add this line below,
+
+#+begin_src emacs-lisp 
+  #+begin_src :tangle day2.ts console.log("Hello Literate !"); #+end_src
+#+end_src 
+
+invoke the command "org-babel-tangle" using the "alt-x" or "C-c C-v t", and when you open the "day2.ts" file you should see the codeblock written from the org file into it.
+
+if everything goes well then, we are set to solve the problem.
+
+** The Problem
+
+The gist of the problem is that we are competing with a elf on a rock-paper-scissors match,
+
+A -> Rock
+B -> Paper
+C -> Scissors
+
+X -> Rock
+Y -> Paper
+Z -> Scissors
+
+the points for the match is calculated on the basis of the shape you select,
+
+Rock -> 1
+Paper -> 2
+Scissors -> 3
+
+and the outcome,
+
+Draw -> 3
+Lost -> 0
+Win -> 6
+
+** Solution - Part 1
+
+let's import the fs module to read the "input.txt" file and store the data into a variable,
+
+#+begin_src typescript :tangle day2.ts 
+  import fs from "fs";
+
+  const data = fs.readFileSync("./input.txt", "utf8").toString();
+#+end_src
+
+we can use enums to define the points and the hand, and pattern matching object to use later on,
+
+#+begin_src typescript :tangle  day2.ts
+  enum HAND {
+    X = "rock",
+    Y = "paper",
+    Z = "scissors",
+    A = "rock",
+    B = "paper",
+    C = "scissors"
+  }
+
+  enum HAND_POINTS {
+    rock = 1,
+    paper = 2,
+    scissors = 3
+  }
+
+  enum GAME_POINTS {
+    WIN = 6,
+    DRAW = 3,
+    LOST = 0
+  }
+
+  const pattern = {
+   "rock paper": "win",
+   "paper scissors": "win",
+   "scissors rock": "win",
+   "scissors scissors": "draw",
+   "paper paper": "draw",
+   "rock rock": "draw",
+   "paper rock": "lose",
+   "scissors paper": "lose",
+   "rock scissors": "lose",
+  }
+#+end_src
+
+now that we have the data, let's split the string into a list,
+
+#+begin_src typescript :tangle day2.ts
+  const games = data.split("\n").map((str) => str.replace(/\r/g, "")).filter(Boolean);
+#+end_src
+
+The pointReturn function takes a single game match and returns the
+point that the player wins,
+
+#+begin_src typescript :tangle  day2.ts
+  function pointReturn(games: string[]): number {
+    let counter = 0;
+    for(const match of games){
+      const game = match.split(" ");
+      const opponentHand = HAND[game[0] as keyof typeof HAND];
+      const playerHand = HAND[game[1] as keyof typeof HAND];
+      const playerPoint = HAND_POINTS[playerHand as keyof typeof HAND_POINTS];
+      const opponentPoint = HAND_POINTS[opponentHand as keyof typeof HAND_POINTS]
+      const moveset: string = [opponentHand, playerHand].join(" ");
+
+      if (pattern[moveset] == "win") {
+        counter += GAME_POINTS.WIN + playerPoint;
+      } else if (pattern[moveset] == "draw") {
+        counter += GAME_POINTS.DRAW + playerPoint;
+      } else if(pattern[moveset] == "lose") {
+        counter += GAME_POINTS.LOST + playerPoint;
+      }
+     }
+
+    return counter;
+   }
+#+end_src
+
+finally we can return the data and log it,
+
+#+begin_src typescript :tangle day2.ts 
+  const points = pointReturn(games);
+  console.log(points)
+#+end_src
+
+
+** Solution - Part 2
+
+In part two of the problem, we need to make sure that we lose and win
+in only particluar situaions.
+
+if "X" then lose, "Y" Draw and "Z" is win, this ensures that we don't
+get found out as a cheater.
+
+The function below takes the input data and accoriding to the rules
+changes the player input i.e our turn data into the one that is according
+to the strategy.
+
+#+begin_src typescript :tangle day2.ts 
+  function strategizeInput(game: string[]){
+    let newInput = [];
+    for(const match of game){
+      const [opponent, player] = match.split(" ");
+      if(player == "X" && opponent == "A"){
+       newInput.push([opponent, "Z"].join(" ")); 
+      } else if(player == "X" && opponent == "B") {
+        newInput.push([opponent, "X"].join(" ")); 
+      } else if(player == "X" && opponent == "C") {
+        newInput.push([opponent, "Y"].join(" "));
+      }else if(player == "Y" && opponent == "A") {
+        newInput.push([opponent, "X"].join(" "));
+      } else if(player == "Y" && opponent == "B") {
+        newInput.push([opponent, "Y"].join(" "));
+      } else if(player == "Y" && opponent == "C") {
+        newInput.push([opponent, "Z"].join(" "));
+      } else if(player == "Z" && opponent == "A") {
+        newInput.push([opponent, "Y"].join(" "));
+      } else if(player == "Z" && opponent == "B") {
+        newInput.push([opponent, "Z"].join(" "));
+      } else if(player == "Z" && opponent == "C") {
+        newInput.push([opponent, "X"].join(" "));
+      }
+    }
+
+    return newInput;
+  }
+
+  console.log(pointReturn(strategizeInput(games)));
+#+end_src
+
+
+** Conclusion
+
+Emacs org babel is a fun way to do literate programming, especially
+for documenting the emacs configuration, other than that I am not
+very sure how to use it rather than maybe for learning a topic
+while writing the code and documenting your thougths at the same time.
+
+A few things I found annoying while doing this exercise is that the
+code blocks typically don't have "warnings" to indicate if you're
+doing something wrong and I had to keep reviweing the code in the
+"day2.ts" file, other than that it was a really interesting way to
+solve this problem, it allowed me to express my ideas more while writing, more than the feeling of coding, it felt like I was writing an explanation for someone else to learn.
+
+If you are viewing it in my [[https://andrew-lc-blog.vercel.app/][blog]] this means that the entire document is the actual source code for the "problem" and for [[https://dev.to/][dev.to]] I used the org to markdown plugin in emacs to post it here.
+
+
+
+
+
