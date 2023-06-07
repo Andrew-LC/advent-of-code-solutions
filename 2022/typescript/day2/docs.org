@@ -33,16 +33,19 @@ if everything goes well then, we are set to solve the problem.
 
 The gist of the problem is that we are competing with a elf on a rock-paper-scissors match,
 
+#+begin_src 
 A -> Rock
 B -> Paper
 C -> Scissors
 
 X -> Rock
 Y -> Paper
-Z -> Scissors
+Z -> Scissors 
+#+end_src
 
 the points for the match is calculated on the basis of the shape you select,
 
+#+BEGIN_SRC
 Rock -> 1
 Paper -> 2
 Scissors -> 3
@@ -52,6 +55,7 @@ and the outcome,
 Draw -> 3
 Lost -> 0
 Win -> 6
+#+END_SRC
 
 ** Solution - Part 1
 
